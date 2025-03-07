@@ -1,3 +1,4 @@
+import os
 import sys
 import datetime
 import numpy as np
@@ -244,6 +245,49 @@ print("Which weekend dates would you like to look at? You may enter:\n")
 print("mm-dd-yyyy")
 
 ## take in input.....
+
+date_to_map = input("> ")
+
+to_plot = df[df["transit_day"] == date_to_map][["latitude", "longitude", "label"]]
+geometry = gpd.points_from_xy(x = to_plot["longitude"], y = to_plot["latitude"])
+
+gdf = gpd.GeoDataFrame(to_plot, geometry = geometry)
+gdf_boroughs = gpd.read_file("nybb.shp")[["BoroName", "geometry"]]
+
+gdf_boroughs = gdf_boroughs[gdf_boroughs["BoroName"] != "Staten Island"] # sorry!
+fig, ax = plt.subplots(figsize=(8, 8))
+
+gdf_boroughs = gdf_boroughs.set_geometry("geometry")
+boroughs_4326 = gdf_boroughs.to_crs("EPSG:4326")
+boroughs_4326.plot(ax = ax, color = "white")
+
+colors_dict = {"Workday Like": "green", "Weekend - Going Out": "red", "Weekend - Out Late": "black", "Outlier": "orange"}
+
+label0 = plt.Line2D([], [], linestyle='none', marker='o', markerfacecolor=colors_dict["Workday Like"], alpha=1.00)
+label1 = plt.Line2D([], [], linestyle='none', marker='o', markerfacecolor=colors_dict["Weekend - Going Out"], alpha=1.00)
+label2 = plt.Line2D([], [], linestyle='none', marker='o', markerfacecolor=colors_dict["Weekend - Out Late"], alpha=1.00)
+label3 = plt.Line2D([], [], linestyle='none', marker='o', markerfacecolor=colors_dict["Outlier"], alpha=1.00)
+ax.legend(handles=[label0, label1, label2, label3], labels=["Workday Like", "Weekend - Going Out", "Weekend - Out Late", "Outlier"])
+
+gdf["color"] = gdf["label"].apply(lambda s: colors_dict[s])
+
+plotted = gdf.plot(ax = ax, color = gdf["color"], markersize=4)
+ax.set_facecolor('lightsteelblue')
+
+circle_proxy = mpatches.Circle((0, 0), radius=0.5, color="red")
+
+
+ax.set_title("Weekend Ridership Activity by Subway Station on " + date_to_map, fontsize=12)
+
+plt.savefig(date_to_map.replace("-", "_") + "_station_activity_map.png")
+print("Map " + date_to_map.replace("-", "_") + "_station_activity_map.png" + " created!")
+
+
+df[df["transit_day"] == date_to_map][["station_complex", "label"]].to_csv(date_to_map.replace("-", "_") + "_station_complex_labels.csv", index=False)
+print("File " + date_to_map.replace("-", "_") + "_station_complex_labels.csv created!")
+
+
+
 
 
 
